@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game #6 - Timed Puzzle: Race to Complete</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+        h1 { color: #f1c40f; }
+        
+        .game-area {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin-top: 20px;
+        }
+
+        /* Puzzle Board */
+        .board {
+            display: grid;
+            grid-template-columns: 200px 200px;
+            grid-template-rows: 200px 200px;
+            gap: 5px;
+            background-color: #34495e;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .slot {
+            width: 200px;
+            height: 200px;
+            background-color: #7f8c8d;
+            border: 2px dashed #bdc3c7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            color: #ecf0f1;
+            border-radius: 5px;
+        }
+
+        .slot.hover {
+            background-color: #95a5a6;
+            border-color: #f1c40f;
+        }
+
+        /* Puzzle Pieces Container */
+        .pieces-tray {
+            width: 300px;
+            min-height: 400px;
+            background-color: #1abc9c;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-content: flex-start;
+        }
+
+        /* Individual Puzzle Piece */
+        .piece {
+            width: 130px;
+            height: 130px;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            border-radius: 10px;
+            cursor: grab;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        
+        .piece:active { cursor: grabbing; }
+
+        .piece .label {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .rotate-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            font-size: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 5;
+        }
+        .rotate-btn:hover { background: #c0392b; }
+
+        /* Dashboard */
+        .dashboard {
+            margin-top: 30px;
+            background: #34495e;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            min-width: 600px;
+        }
+        .timer { font-size: 30px; font-weight: bold; color: #e74c3c; margin: 10px 0;}
+        .subtitle { font-size: 20px; margin-top: 10px; min-height: 30px; color: #3498db; }
+        .controls button {
+            padding: 12px 24px; margin: 0 10px; font-size: 16px; font-weight: bold;
+            cursor: pointer; border: none; border-radius: 5px;
+            background: #e67e22; color: white; transition: 0.2s;
+        }
+        .controls button:hover { background: #d35400; }
+
+        .preview-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #f1c40f;
+            font-size: 30px;
+            border-radius: 10px;
+            z-index: 10;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🧩 Timed Puzzle: Race to Complete</h1>
+    
+    <div class="dashboard">
+        <div class="timer">Time Remaining: <span id="timeText">00:00</span></div>
+        <div class="subtitle" id="subtitleText">Welcome! Click 'Start Game' to preview the picture. Right-click pieces to rotate!</div>
+        <div class="controls">
+            <button onclick="startGame()">▶ Start Game</button>
+            <button onclick="replayVoice()">🔊 Replay Voice</button>
+            <button onclick="slowVoice()">🐢 Slow Voice</button>
+        </div>
+    </div>
+
+    <div class="game-area">
+        <!-- Puzzle Board (Slots) -->
+        <div class="board" id="board">
+            <div class="preview-overlay" id="previewOverlay">Previewing...</div>
+            <div class="slot" data-id="top-left">Top-Left</div>
+            <div class="slot" data-id="top-right">Top-Right</div>
+            <div class="slot" data-id="bottom-left">Bottom-Left</div>
+            <div class="slot" data-id="bottom-right">Bottom-Right</div>
+        </div>
+
+        <!-- Pieces Tray -->
+        <div class="pieces-tray" id="tray">
+            <!-- Pieces will be injected here -->
+        </div>
+    </div>
+
+    <script>
+        const synth = window.speechSynthesis;
+        let lastMessage = "";
+        let timerInterval;
+        let timeLeft = 60;
+        let isPlaying = false;
+        let piecesPlaced = 0;
+
+        const piecesData = [
+            { id: "top-left", icon: "🚜", label: "Red Tractor", rot: 0, 
+              voice: "The red tractor belongs in the top-left corner." },
+            { id: "top-right", icon: "☀️", label: "Yellow Sun", rot: 90, 
+              voice: "Place the yellow sun in the top-right corner." },
+            { id: "bottom-left", icon: "🐄", label: "Cow", rot: 270, 
+              voice: "The cow belongs in the bottom-left corner." },
+            { id: "bottom-right", icon: "🏠", label: "Barn", rot: 180, 
+              voice: "The barn is in the bottom-right corner." }
+        ];
+
+        function speak(text, rate = 1.0) {
+            synth.cancel();
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = rate;
+            synth.speak(utterance);
+            lastMessage = text;
+            document.getElementById('subtitleText').innerText = text;
+        }
+
+        function replayVoice() { if (lastMessage) speak(lastMessage, 1.0); }
+        function slowVoice() { if (lastMessage) speak(lastMessage, 0.6); }
+
+        function formatTime(seconds) {
+            let m = Math.floor(seconds / 60);
+            let s = seconds % 60;
+            return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+        }
+
+        function startGame() {
+            clearInterval(timerInterval);
+            piecesPlaced = 0;
+            isPlaying = false;
+            
+            speak("Look carefully. You have 5 seconds to plan your moves.");
+            document.getElementById('timeText').innerText = "--:--";
+            
+            // Show preview
+            document.getElementById('previewOverlay').style.display = 'flex';
+            document.getElementById('tray').innerHTML = ""; // Clear tray
+
+            setTimeout(() => {
+                document.getElementById('previewOverlay').style.display = 'none';
+                generatePieces();
+                startTimer(60); // 60 seconds
+            }, 5000);
+        }
+
+        function startTimer(seconds) {
+            timeLeft = seconds;
+            isPlaying = true;
+            document.getElementById('timeText').innerText = formatTime(timeLeft);
+            speak("You have sixty seconds. Go!");
+
+            timerInterval = setInterval(() => {
+                if (!isPlaying) return;
+                timeLeft--;
+                document.getElementById('timeText').innerText = formatTime(timeLeft);
+
+                if (timeLeft === 30) speak("Thirty seconds remaining.");
+                if (timeLeft === 10) speak("Ten seconds left. Hurry up!");
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    isPlaying = false;
+                    speak("Time is up. You were very close! Try again.");
+                }
+            }, 1000);
+        }
+
+        function generatePieces() {
+            const tray = document.getElementById('tray');
+            tray.innerHTML = "";
+            
+            // Shuffle array
+            let shuffled = [...piecesData].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach(data => {
+                let p = document.createElement('div');
+                p.className = 'piece';
+                p.draggable = true;
+                p.id = "piece-" + data.id;
+                p.dataset.target = data.id;
+                p.dataset.rotation = data.rot;
+                
+                // Visual rotation
+                p.style.transform = `rotate(${data.rot}deg)`;
+                
+                p.innerHTML = `
+                    <div class="rotate-btn" onclick="rotatePiece(event, '${p.id}', ${data.rot})" style="transform: rotate(-${data.rot}deg)">🔄</div>
+                    <div style="transform: rotate(-${data.rot}deg)">${data.icon}</div>
+                    <div class="label" style="transform: rotate(-${data.rot}deg)">${data.label}</div>
+                `;
+                
+                // Drag Events
+                p.addEventListener('dragstart', dragStart);
+                
+                // Right Click to Rotate
+                p.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    if(!isPlaying) return;
+                    let currentRot = parseInt(p.dataset.rotation);
+                    currentRot = (currentRot + 90) % 360;
+                    p.dataset.rotation = currentRot;
+                    p.style.transform = `rotate(${currentRot}deg)`;
+                    // Keep text upright
+                    p.innerHTML = `<div style="transform: rotate(-${currentRot}deg)">${data.icon}</div><div class="label" style="transform: rotate(-${currentRot}deg)">${data.label}</div>`;
+                    speak("Rotate clockwise.");
+                });
+
+                tray.appendChild(p);
+            });
+
+            setupSlots();
+        }
+        
+        function rotatePiece(e, pieceId, initialRot) {
+            e.stopPropagation(); // Prevent drag start
+            if(!isPlaying) return;
+            
+            let p = document.getElementById(pieceId);
+            let currentRot = parseInt(p.dataset.rotation);
+            currentRot = (currentRot + 90) % 360;
+            p.dataset.rotation = currentRot;
+            
+            // Rotate the parent container
+            p.style.transform = `rotate(${currentRot}deg)`;
+            
+            // Extract original icon and label from piecesData
+            let pieceData = piecesData.find(d => "piece-" + d.id === pieceId);
+            
+            // Re-render contents so text stays upright
+            p.innerHTML = `
+                <div class="rotate-btn" onclick="rotatePiece(event, '${pieceId}', ${currentRot})" style="transform: rotate(-${currentRot}deg)">🔄</div>
+                <div style="transform: rotate(-${currentRot}deg)">${pieceData.icon}</div>
+                <div class="label" style="transform: rotate(-${currentRot}deg)">${pieceData.label}</div>
+            `;
+            speak("Rotate clockwise.");
+        }
+
+        function setupSlots() {
+            const slots = document.querySelectorAll('.slot');
+            slots.forEach(slot => {
+                slot.innerHTML = slot.dataset.id.replace("-", " ").toUpperCase();
+                slot.addEventListener('dragover', dragOver);
+                slot.addEventListener('dragenter', dragEnter);
+                slot.addEventListener('dragleave', dragLeave);
+                slot.addEventListener('drop', drop);
+            });
+        }
+
+        let draggedPiece = null;
+
+        function dragStart(e) {
+            if(!isPlaying) { e.preventDefault(); return; }
+            draggedPiece = this;
+            setTimeout(() => this.style.opacity = "0.5", 0);
+        }
+
+        function dragOver(e) { e.preventDefault(); }
+        function dragEnter(e) { e.preventDefault(); this.classList.add('hover'); }
+        function dragLeave() { this.classList.remove('hover'); }
+
+        function drop(e) {
+            this.classList.remove('hover');
+            if(!isPlaying || !draggedPiece) return;
+            
+            draggedPiece.style.opacity = "1";
+
+            const targetId = this.dataset.id;
+            const pieceId = draggedPiece.dataset.target;
+            const pieceRot = parseInt(draggedPiece.dataset.rotation);
+
+            if (pieceId === targetId) {
+                // Check Rotation
+                if (pieceRot !== 0) {
+                    speak("You found the correct position, but try rotating it!");
+                    return;
+                }
+
+                // Correct Match
+                this.innerHTML = "";
+                draggedPiece.draggable = false;
+                draggedPiece.style.width = "100%";
+                draggedPiece.style.height = "100%";
+                draggedPiece.style.boxShadow = "none";
+                this.appendChild(draggedPiece);
+                piecesPlaced++;
+
+                // Trigger learning voice
+                let matchedData = piecesData.find(p => p.id === pieceId);
+                speak("Great match! " + matchedData.voice);
+
+                if (piecesPlaced === 4) {
+                    clearInterval(timerInterval);
+                    isPlaying = false;
+                    setTimeout(() => {
+                        speak(`Excellent work! You completed the puzzle with ${timeLeft} seconds remaining. You are a Master Builder!`);
+                    }, 4000);
+                }
+            } else {
+                // Wrong position
+                speak("That piece does not fit here. Check the details again.");
+            }
+            draggedPiece = null;
+        }
+    </script>
+</body>
+</html>

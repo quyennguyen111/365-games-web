@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game #5 - Spot 10 Differences</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e2f;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { color: #f39c12; }
+        .game-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .scene {
+            position: relative;
+            width: 500px;
+            height: 400px;
+            background-color: #87CEEB; /* Sky background */
+            border: 4px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+        /* Scenery Common */
+        .ground { position: absolute; bottom: 0; width: 100%; height: 100px; background: #8B4513; }
+        .grass { position: absolute; bottom: 100px; width: 100%; height: 20px; background: #228B22; }
+        
+        /* Objects */
+        .obj { position: absolute; display: flex; justify-content: center; align-items: center; font-size: 40px; user-select: none; transition: 0.3s; }
+        
+        /* Specific Objects */
+        .sun { top: 20px; left: 20px; font-size: 60px; }
+        .house { bottom: 100px; left: 150px; font-size: 150px; }
+        .tree { bottom: 100px; right: 50px; font-size: 120px; }
+        .car { bottom: 80px; left: 20px; font-size: 80px; }
+        .cat { bottom: 120px; right: 200px; font-size: 50px; }
+        .bird { top: 100px; right: 100px; font-size: 40px; }
+        .cloud { top: 30px; right: 150px; font-size: 60px; }
+        .apples { bottom: 200px; right: 60px; font-size: 30px; letter-spacing: -10px;}
+        .star { top: 50px; left: 200px; font-size: 40px; }
+        .flower { bottom: 90px; right: 150px; font-size: 40px; }
+
+        .dashboard {
+            margin-top: 20px;
+            background: #2c3e50;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            min-width: 600px;
+        }
+        .score { font-size: 24px; font-weight: bold; color: #2ecc71; }
+        .subtitle { font-size: 18px; margin-top: 10px; min-height: 25px; color: #f1c40f; }
+        .controls { margin-top: 15px; }
+        button {
+            padding: 10px 20px; margin: 0 5px; font-size: 16px; font-weight: bold;
+            cursor: pointer; border: none; border-radius: 5px;
+            background: #3498db; color: white; transition: 0.2s;
+        }
+        button:hover { background: #2980b9; }
+        
+        .circle {
+            position: absolute;
+            border: 4px solid #e74c3c;
+            border-radius: 50%;
+            display: none;
+            pointer-events: none;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🕵️ The Detective Challenge: Spot 10 Differences</h1>
+    
+    <div class="game-container">
+        <!-- Picture A (Reference) -->
+        <div class="scene" id="sceneA">
+            <div class="ground"></div>
+            <div class="grass"></div>
+            <div class="obj sun" style="filter: hue-rotate(0deg);">☀️</div>
+            <div class="obj cloud">☁️</div>
+            <div class="obj house">🏠</div>
+            <div class="obj tree">🌳</div>
+            <div class="obj car" style="filter: hue-rotate(0deg);">🚗</div>
+            <div class="obj cat">🐱</div>
+            <div class="obj bird" style="top: 100px; right: 100px;">🐦</div>
+            <div class="obj apples">🍎🍎🍎🍎</div>
+            <!-- Star is missing in A -->
+            <div class="obj flower" style="transform: scale(1);">🌻</div>
+            <!-- Dog facing right in A -->
+            <div class="obj" style="bottom: 100px; left: 350px; font-size: 50px; transform: scaleX(1);">🐕</div>
+        </div>
+
+        <!-- Picture B (Interactive) -->
+        <div class="scene" id="sceneB" onclick="handleMiss(event)">
+            <div class="ground"></div>
+            <div class="grass"></div>
+            <!-- 1. Color Difference -->
+            <div class="obj sun diff-target" data-id="1" style="filter: hue-rotate(180deg);" onclick="foundDiff(event, 1)">☀️</div>
+            <!-- 2. Missing Object (Cloud removed, but we need a clickable area, so invisible block) -->
+            <div class="obj diff-target" data-id="2" style="top: 30px; right: 150px; width: 60px; height: 60px; cursor: pointer;" onclick="foundDiff(event, 2)"></div>
+            <div class="obj house">🏠</div>
+            <div class="obj tree">🌳</div>
+            <!-- 3. Size Difference -->
+            <div class="obj car diff-target" data-id="3" style="font-size: 40px; bottom: 80px; left: 40px;" onclick="foundDiff(event, 3)">🚗</div>
+            <!-- 4. Extra Object -->
+            <div class="obj star diff-target" data-id="4" onclick="foundDiff(event, 4)">⭐</div>
+            <!-- 5. Position Difference -->
+            <div class="obj bird diff-target" data-id="5" style="top: 250px; right: 100px;" onclick="foundDiff(event, 5)">🐦</div>
+            <!-- 6. Number Difference -->
+            <div class="obj apples diff-target" data-id="6" onclick="foundDiff(event, 6)">🍎🍎🍎</div>
+            <!-- 7. Action/State Difference (Cat sleeping vs awake) -->
+            <div class="obj cat diff-target" data-id="7" onclick="foundDiff(event, 7)">😼</div>
+            <!-- 8. Shape/Type Difference (Sunflower -> Tulip) -->
+            <div class="obj flower diff-target" data-id="8" onclick="foundDiff(event, 8)">🌷</div>
+            <!-- 9. Direction Difference -->
+            <div class="obj diff-target" data-id="9" style="bottom: 100px; left: 350px; font-size: 50px; transform: scaleX(-1);" onclick="foundDiff(event, 9)">🐕</div>
+            <!-- 10. Logic/Weather Difference (Snowman in summer) -->
+            <div class="obj diff-target" data-id="10" style="bottom: 100px; right: 280px; font-size: 60px;" onclick="foundDiff(event, 10)">⛄</div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="score">Differences Found: <span id="scoreText">0</span> / 10</div>
+        <div class="subtitle" id="subtitleText">Welcome, Detective! Click 'Start Game' to begin your mission.</div>
+        <div class="controls">
+            <button onclick="startGame()">▶ Start Game</button>
+            <button onclick="replayVoice()">🔊 Replay</button>
+            <button onclick="slowVoice()">🐢 Slow</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let isPlaying = false;
+        let lastMessage = "";
+        let synth = window.speechSynthesis;
+        let voiceRate = 1.0;
+
+        const db = {
+            1: "Great job! The sun is yellow in Picture A, but it is blue in Picture B. This is a color difference.",
+            2: "Excellent! The cloud is missing. There is a cloud in Picture A, but no cloud in Picture B.",
+            3: "You found it! The car is big in Picture A, but it is small in Picture B. Size difference!",
+            4: "Well done! Picture B has an extra star in the sky. Extra object!",
+            5: "Good observation! The bird is above the tree in Picture A, but below the tree in Picture B. Position changed!",
+            6: "Awesome! Let's count. Picture A has four apples. Picture B has only three apples. Number difference!",
+            7: "Spot on! The cat is happy in Picture A, but angry in Picture B. The emotion changed!",
+            8: "Perfect! It's a sunflower in Picture A, but a tulip in Picture B. Shape and type changed!",
+            9: "Nice work! The dog is facing right in Picture A, and facing left in Picture B. Direction changed!",
+            10: "You found the logic error! A snowman does not belong in a hot summer scene!"
+        };
+
+        const foundItems = new Set();
+
+        function speak(text, rate = 1.0) {
+            synth.cancel(); // Stop current speaking
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = rate;
+            utterance.pitch = 1.1;
+            synth.speak(utterance);
+            lastMessage = text;
+            document.getElementById('subtitleText').innerText = text;
+        }
+
+        function startGame() {
+            score = 0;
+            foundItems.clear();
+            document.getElementById('scoreText').innerText = score;
+            document.querySelectorAll('.circle').forEach(e => e.remove());
+            isPlaying = true;
+            let msg = "Welcome, Detective! Two pictures may look the same, but ten things are different. Look carefully, listen to the clues, and find all ten differences in Picture B. Are you ready? Let’s begin!";
+            speak(msg);
+        }
+
+        function replayVoice() {
+            if (lastMessage) speak(lastMessage, 1.0);
+        }
+
+        function slowVoice() {
+            if (lastMessage) speak(lastMessage, 0.6);
+        }
+
+        function foundDiff(event, id) {
+            event.stopPropagation();
+            if (!isPlaying) return;
+            if (foundItems.has(id)) return;
+
+            foundItems.add(id);
+            score++;
+            document.getElementById('scoreText').innerText = score;
+            
+            // Draw circle around the found object in Picture B
+            let target = event.target;
+            let circle = document.createElement('div');
+            circle.className = 'circle';
+            circle.style.width = (target.offsetWidth + 20) + 'px';
+            circle.style.height = (target.offsetHeight + 20) + 'px';
+            circle.style.top = (target.offsetTop - 10) + 'px';
+            circle.style.left = (target.offsetLeft - 10) + 'px';
+            circle.style.display = 'block';
+            document.getElementById('sceneB').appendChild(circle);
+
+            // Speak learning value
+            speak(db[id]);
+
+            if (score === 10) {
+                setTimeout(() => {
+                    speak("Mission Accomplished! You are a Master Detective. You found all ten differences and learned a lot of English today!");
+                }, 4000);
+            }
+        }
+
+        function handleMiss(event) {
+            if (!isPlaying) return;
+            // Prevent triggering if clicked on an actual target but it bubbled up
+            if (event.target.classList.contains('diff-target')) return;
+            
+            speak("Look carefully. That part is the same in both pictures.");
+        }
+    </script>
+</body>
+</html>

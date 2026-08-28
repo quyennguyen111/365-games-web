@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game #9 - Matchstick Mystery</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+        h1 { color: #f1c40f; }
+
+        .dashboard {
+            margin-bottom: 20px;
+            background: #34495e;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            min-width: 600px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .subtitle { font-size: 20px; margin-top: 10px; min-height: 30px; color: #3498db; }
+        .controls button {
+            padding: 10px 20px; margin: 0 10px; font-size: 16px; font-weight: bold;
+            cursor: pointer; border: none; border-radius: 5px;
+            background: #e67e22; color: white; transition: 0.2s;
+        }
+        .controls button:hover { background: #d35400; }
+
+        .game-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 50px;
+        }
+
+        /* 7-Segment Block */
+        .digit-block {
+            position: relative;
+            width: 80px;
+            height: 140px;
+        }
+        
+        .op-block {
+            position: relative;
+            width: 60px;
+            height: 140px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Sticks */
+        .stick {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .stick.active {
+            background-color: #e74c3c;
+            box-shadow: 0 0 10px #e74c3c;
+        }
+
+        .stick:hover {
+            background-color: rgba(231, 76, 60, 0.5);
+        }
+
+        .stick.active:hover {
+            background-color: #c0392b;
+        }
+        
+        .stick.selected {
+            background-color: #f1c40f;
+            box-shadow: 0 0 15px #f1c40f;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Digit Segments Positioning */
+        .seg-top { top: 0; left: 10px; width: 60px; height: 10px; }
+        .seg-top-left { top: 10px; left: 0; width: 10px; height: 60px; }
+        .seg-top-right { top: 10px; right: 0; width: 10px; height: 60px; }
+        .seg-mid { top: 70px; left: 10px; width: 60px; height: 10px; }
+        .seg-bot-left { top: 80px; left: 0; width: 10px; height: 60px; }
+        .seg-bot-right { top: 80px; right: 0; width: 10px; height: 60px; }
+        .seg-bot { top: 140px; left: 10px; width: 60px; height: 10px; }
+
+        /* Operator Segments Positioning */
+        .seg-op-horiz { top: 65px; left: 0; width: 60px; height: 10px; }
+        .seg-op-vert { top: 40px; left: 25px; width: 10px; height: 60px; }
+        
+        /* Equal Segments */
+        .seg-eq-top { top: 55px; left: 0; width: 60px; height: 10px; }
+        .seg-eq-bot { top: 75px; left: 0; width: 60px; height: 10px; }
+
+        .status { margin-top: 30px; font-size: 24px; color: #2ecc71; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>🔥 Matchstick Mystery: Move, Think, Solve</h1>
+
+    <div class="dashboard">
+        <div class="subtitle" id="subtitleText">Click 'Start Game' to repair the equation!</div>
+        <div class="controls" style="margin-top:15px;">
+            <button onclick="startGame()">▶ Start Game</button>
+            <button onclick="checkWin()">✅ Check Answer</button>
+            <button onclick="replayVoice()">🔊 Replay</button>
+        </div>
+    </div>
+
+    <!-- The Math Equation -->
+    <div class="game-area" id="gameArea" style="opacity: 0.3; pointer-events: none;">
+        
+        <!-- Block 0: Digit '6' -->
+        <div class="digit-block" data-type="digit" id="b0">
+            <div class="stick seg-top active" id="b0-0" onclick="handleStickClick('b0-0')"></div>
+            <div class="stick seg-top-left active" id="b0-1" onclick="handleStickClick('b0-1')"></div>
+            <div class="stick seg-top-right" id="b0-2" onclick="handleStickClick('b0-2')"></div>
+            <div class="stick seg-mid active" id="b0-3" onclick="handleStickClick('b0-3')"></div>
+            <div class="stick seg-bot-left active" id="b0-4" onclick="handleStickClick('b0-4')"></div>
+            <div class="stick seg-bot-right active" id="b0-5" onclick="handleStickClick('b0-5')"></div>
+            <div class="stick seg-bot active" id="b0-6" onclick="handleStickClick('b0-6')"></div>
+        </div>
+
+        <!-- Block 1: Operator '+' -->
+        <div class="op-block" data-type="op" id="b1">
+            <div class="stick seg-op-horiz active" id="b1-0" onclick="handleStickClick('b1-0')"></div>
+            <div class="stick seg-op-vert active" id="b1-1" onclick="handleStickClick('b1-1')"></div>
+        </div>
+
+        <!-- Block 2: Digit '4' -->
+        <div class="digit-block" data-type="digit" id="b2">
+            <div class="stick seg-top" id="b2-0" onclick="handleStickClick('b2-0')"></div>
+            <div class="stick seg-top-left active" id="b2-1" onclick="handleStickClick('b2-1')"></div>
+            <div class="stick seg-top-right active" id="b2-2" onclick="handleStickClick('b2-2')"></div>
+            <div class="stick seg-mid active" id="b2-3" onclick="handleStickClick('b2-3')"></div>
+            <div class="stick seg-bot-left" id="b2-4" onclick="handleStickClick('b2-4')"></div>
+            <div class="stick seg-bot-right active" id="b2-5" onclick="handleStickClick('b2-5')"></div>
+            <div class="stick seg-bot" id="b2-6" onclick="handleStickClick('b2-6')"></div>
+        </div>
+
+        <!-- Block 3: Operator '=' -->
+        <div class="op-block" data-type="eq" id="b3">
+            <div class="stick seg-eq-top active" id="b3-0" onclick="handleStickClick('b3-0')"></div>
+            <div class="stick seg-eq-bot active" id="b3-1" onclick="handleStickClick('b3-1')"></div>
+        </div>
+
+        <!-- Block 4: Digit '4' -->
+        <div class="digit-block" data-type="digit" id="b4">
+            <div class="stick seg-top" id="b4-0" onclick="handleStickClick('b4-0')"></div>
+            <div class="stick seg-top-left active" id="b4-1" onclick="handleStickClick('b4-1')"></div>
+            <div class="stick seg-top-right active" id="b4-2" onclick="handleStickClick('b4-2')"></div>
+            <div class="stick seg-mid active" id="b4-3" onclick="handleStickClick('b4-3')"></div>
+            <div class="stick seg-bot-left" id="b4-4" onclick="handleStickClick('b4-4')"></div>
+            <div class="stick seg-bot-right active" id="b4-5" onclick="handleStickClick('b4-5')"></div>
+            <div class="stick seg-bot" id="b4-6" onclick="handleStickClick('b4-6')"></div>
+        </div>
+    </div>
+
+    <div class="status" id="statusText">Moves Left: 1</div>
+
+    <script>
+        const synth = window.speechSynthesis;
+        let lastMessage = "";
+        let isPlaying = false;
+        
+        let selectedStickId = null;
+        let originalConfig = []; // Save state to check if exactly 1 move was made
+
+        // Dictionary to decode 7-segment states to digits
+        // Segments: 0:Top, 1:TL, 2:TR, 3:Mid, 4:BL, 5:BR, 6:Bot
+        const digitMap = {
+            "1110111": "0", "0010010": "1", "1011101": "2", "1011011": "3",
+            "0111010": "4", "1101011": "5", "1101111": "6", "1010010": "7",
+            "1111111": "8", "1111011": "9"
+        };
+
+        function speak(text) {
+            synth.cancel();
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            synth.speak(utterance);
+            lastMessage = text;
+            document.getElementById('subtitleText').innerText = text;
+        }
+
+        function replayVoice() { if (lastMessage) speak(lastMessage); }
+
+        function startGame() {
+            isPlaying = true;
+            document.getElementById('gameArea').style.opacity = "1";
+            document.getElementById('gameArea').style.pointerEvents = "auto";
+            
+            // Record original state of all sticks
+            originalConfig = Array.from(document.querySelectorAll('.stick')).map(s => s.classList.contains('active'));
+            selectedStickId = null;
+            document.querySelectorAll('.stick').forEach(s => s.classList.remove('selected'));
+
+            speak("Welcome to Matchstick Mystery! Move exactly one stick to make the equation correct. Click a red stick to pick it up, then click an empty slot to place it.");
+        }
+
+        function handleStickClick(id) {
+            if(!isPlaying) return;
+            let el = document.getElementById(id);
+            let isActive = el.classList.contains('active');
+
+            if (selectedStickId === null) {
+                // Picking up a stick
+                if (isActive) {
+                    selectedStickId = id;
+                    el.classList.add('selected');
+                    speak("Stick selected.");
+                } else {
+                    speak("That slot is empty. Click a red stick to pick it up first.");
+                }
+            } else {
+                // Placing a stick or deselecting
+                if (selectedStickId === id) {
+                    // Deselect
+                    el.classList.remove('selected');
+                    selectedStickId = null;
+                    speak("Stick deselected.");
+                } else {
+                    if (isActive) {
+                        speak("There is already a stick there. Choose an empty slot.");
+                    } else {
+                        // Move the stick!
+                        document.getElementById(selectedStickId).classList.remove('active', 'selected');
+                        el.classList.add('active');
+                        selectedStickId = null;
+                        speak("Stick moved. Press Check Answer when you are ready.");
+                        document.getElementById('statusText').innerText = "Moves Left: 0 (Click Check Answer)";
+                    }
+                }
+            }
+        }
+
+        function getDigitValue(blockId) {
+            let block = document.getElementById(blockId);
+            let stateStr = "";
+            for(let i=0; i<7; i++) {
+                let s = document.getElementById(blockId + "-" + i);
+                stateStr += s.classList.contains('active') ? "1" : "0";
+            }
+            return digitMap[stateStr] || "?";
+        }
+
+        function checkWin() {
+            if(!isPlaying) return;
+            
+            // Check if exactly 1 move was made
+            let currentConfig = Array.from(document.querySelectorAll('.stick')).map(s => s.classList.contains('active'));
+            let diffCount = 0;
+            for(let i=0; i<originalConfig.length; i++) {
+                if(originalConfig[i] !== currentConfig[i]) diffCount++;
+            }
+
+            if(diffCount !== 2) { // 1 removed, 1 added = 2 differences
+                speak("You must move exactly one stick. Try resetting and playing again.");
+                return;
+            }
+
+            // Decode Equation
+            let d1 = getDigitValue('b0');
+            let d2 = getDigitValue('b2');
+            let d3 = getDigitValue('b4');
+
+            // Operator logic
+            let opVert = document.getElementById('b1-1').classList.contains('active');
+            let opHoriz = document.getElementById('b1-0').classList.contains('active');
+            let opChar = "?";
+            if(opHoriz && opVert) opChar = "+";
+            else if(opHoriz && !opVert) opChar = "-";
+            
+            // Equation logic
+            let eqTop = document.getElementById('b3-0').classList.contains('active');
+            let eqBot = document.getElementById('b3-1').classList.contains('active');
+            if(!eqTop || !eqBot) {
+                speak("You broke the equal sign. The equation is invalid.");
+                return;
+            }
+
+            if(d1 === "?" || d2 === "?" || d3 === "?") {
+                speak("That is not a valid number. Try a different move.");
+                return;
+            }
+
+            let equationStr = `${d1} ${opChar} ${d2} = ${d3}`;
+            console.log("Checking:", equationStr);
+
+            let isCorrect = false;
+            let n1 = parseInt(d1); let n2 = parseInt(d2); let n3 = parseInt(d3);
+            if(opChar === "+") isCorrect = (n1 + n2 === n3);
+            if(opChar === "-") isCorrect = (n1 - n2 === n3);
+
+            if(isCorrect) {
+                // MULTIPLE SOLUTION DETECTOR FEEDBACK
+                if(d1 === "8" && opChar === "-" && d2 === "4" && d3 === "4") {
+                    speak("Amazing! You moved a stick from the plus sign to make the six an eight. Eight minus four equals four. This is a brilliant alternative solution!");
+                } else if(d1 === "0" && opChar === "+" && d2 === "4" && d3 === "4") {
+                    speak("Excellent work! You moved the middle stick of the six to make it a zero. Zero plus four equals four. You are a Master Logic Engineer!");
+                } else {
+                    speak("Correct! " + equationStr + ". Great problem solving!");
+                }
+                isPlaying = false;
+                document.getElementById('statusText').innerText = "Puzzle Solved!";
+            } else {
+                speak(`The equation says ${d1} ${opChar === '+' ? 'plus' : 'minus'} ${d2} equals ${d3}. That is not true. Try again.`);
+            }
+        }
+    </script>
+</body>
+</html>

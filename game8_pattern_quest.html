@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game #8 - What Comes Next? Pattern Quest</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+        h1 { color: #f1c40f; }
+
+        .dashboard {
+            margin-bottom: 20px;
+            background: #34495e;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            min-width: 600px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .subtitle { font-size: 20px; margin-top: 10px; min-height: 30px; color: #3498db; }
+        .controls button {
+            padding: 10px 20px; margin: 0 10px; font-size: 16px; font-weight: bold;
+            cursor: pointer; border: none; border-radius: 5px;
+            background: #e67e22; color: white; transition: 0.2s;
+        }
+        .controls button:hover { background: #d35400; }
+
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        /* Sequence Board */
+        .sequence-board {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background-color: #1abc9c;
+            padding: 20px 40px;
+            border-radius: 15px;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.3);
+            min-height: 100px;
+        }
+
+        .seq-item {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 80px;
+            height: 80px;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            color: #2c3e50;
+            font-size: 40px;
+            font-weight: bold;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.4);
+        }
+
+        .seq-missing {
+            background-color: #f1c40f;
+            color: #c0392b;
+            border: 3px dashed #c0392b;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Answers Board */
+        .answers-board {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .answer-btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 120px;
+            height: 100px;
+            background-color: #3498db;
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            transition: 0.2s;
+        }
+        .answer-btn:hover { background-color: #2980b9; transform: translateY(-5px); }
+        .answer-btn:active { transform: translateY(0); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <h1>🔍 What Comes Next? Pattern Quest</h1>
+
+    <div class="dashboard">
+        <div class="subtitle" id="subtitleText">Click 'Start Game' to discover the secret rules!</div>
+        <div class="controls" style="margin-top:15px;">
+            <button onclick="startGame()">▶ Start Game</button>
+            <button onclick="replayVoice()">🔊 Replay</button>
+            <button onclick="slowVoice()">🐢 Slow</button>
+        </div>
+    </div>
+
+    <div class="game-area hidden" id="gameArea">
+        <div class="sequence-board" id="sequenceBoard">
+            <!-- Sequence items injected here -->
+        </div>
+
+        <div class="answers-board" id="answersBoard">
+            <!-- Answers injected here -->
+        </div>
+    </div>
+
+    <script>
+        const synth = window.speechSynthesis;
+        let lastMessage = "";
+        let currentLevel = 0;
+        let isPlaying = false;
+
+        const levels = [
+            {
+                type: "Number Logic (+2)",
+                sequence: ["2", "4", "6", "8"],
+                voiceSeq: "Two, four, six, eight. What comes next?",
+                options: [
+                    { value: "10", isCorrect: true, feedback: "Ten. Excellent! The rule is add two each time." },
+                    { value: "9", isCorrect: false, feedback: "You added one, but look closely at the difference between two and four." },
+                    { value: "16", isCorrect: false, feedback: "You multiplied by two, but what is six plus two?" }
+                ]
+            },
+            {
+                type: "AB Pattern",
+                sequence: ["🍎", "🍌", "🍎", "🍌", "🍎"],
+                voiceSeq: "Apple, banana, apple, banana, apple. What comes next?",
+                options: [
+                    { value: "🍌", isCorrect: true, feedback: "Banana! Correct! The pattern alternates: apple, banana, apple, banana." },
+                    { value: "🍎", isCorrect: false, feedback: "We just had an apple. What comes after an apple?" },
+                    { value: "🍐", isCorrect: false, feedback: "Green pear breaks the pattern. Look at the fruits we are using." }
+                ]
+            },
+            {
+                type: "Phonics Word Family",
+                sequence: ["CAT", "BAT", "HAT"],
+                voiceSeq: "Cat, bat, hat. What comes next?",
+                options: [
+                    { value: "MAT", isCorrect: true, feedback: "Mat! Awesome. All these words end with the A-T sound. They rhyme!" },
+                    { value: "DOG", isCorrect: false, feedback: "Dog is an animal, but it doesn't rhyme with cat and hat." },
+                    { value: "SUN", isCorrect: false, feedback: "Sun breaks the pattern. Listen to the ending sound: A-T." }
+                ]
+            }
+        ];
+
+        function speak(text, rate = 1.0) {
+            synth.cancel();
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = rate;
+            synth.speak(utterance);
+            lastMessage = text;
+            document.getElementById('subtitleText').innerText = text;
+        }
+
+        function replayVoice() { if (lastMessage) speak(lastMessage, 1.0); }
+        function slowVoice() { if (lastMessage) speak(lastMessage, 0.6); }
+
+        function startGame() {
+            currentLevel = 0;
+            document.getElementById('gameArea').classList.remove('hidden');
+            loadLevel();
+        }
+
+        function loadLevel() {
+            isPlaying = true;
+            let levelData = levels[currentLevel];
+            
+            // Build Sequence UI
+            const seqBoard = document.getElementById('sequenceBoard');
+            seqBoard.innerHTML = "";
+            levelData.sequence.forEach(item => {
+                let div = document.createElement('div');
+                div.className = 'seq-item';
+                // Adjust font size for words vs emojis/numbers
+                if(item.length > 2) div.style.fontSize = '25px';
+                div.innerText = item;
+                seqBoard.appendChild(div);
+            });
+            
+            // Missing Item
+            let missing = document.createElement('div');
+            missing.className = 'seq-item seq-missing';
+            missing.innerText = "?";
+            missing.id = "missingBox";
+            seqBoard.appendChild(missing);
+
+            // Build Answers UI (Shuffle them)
+            const ansBoard = document.getElementById('answersBoard');
+            ansBoard.innerHTML = "";
+            let shuffledOptions = [...levelData.options].sort(() => Math.random() - 0.5);
+            
+            shuffledOptions.forEach(opt => {
+                let btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                if(opt.value.length > 2) btn.style.fontSize = '25px';
+                btn.innerText = opt.value;
+                btn.onclick = () => checkAnswer(opt);
+                ansBoard.appendChild(btn);
+            });
+
+            // Speak intro
+            if(currentLevel === 0) {
+                speak("Welcome to Pattern Quest! " + levelData.voiceSeq);
+            } else {
+                speak(levelData.voiceSeq);
+            }
+        }
+
+        function checkAnswer(selectedOption) {
+            if(!isPlaying) return;
+            
+            speak(selectedOption.feedback);
+
+            if(selectedOption.isCorrect) {
+                isPlaying = false;
+                // Visually fill the missing box
+                let missingBox = document.getElementById('missingBox');
+                missingBox.classList.remove('seq-missing');
+                missingBox.innerText = selectedOption.value;
+                missingBox.style.backgroundColor = "#2ecc71";
+                missingBox.style.color = "white";
+
+                setTimeout(() => {
+                    currentLevel++;
+                    if(currentLevel < levels.length) {
+                        loadLevel();
+                    } else {
+                        speak("Amazing! You discovered all the secret rules. You are now a Pattern Master!");
+                        document.getElementById('gameArea').classList.add('hidden');
+                    }
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

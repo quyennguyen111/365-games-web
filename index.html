@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>365 Games: English Education Portal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e272e;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #0fb9b1;
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #d1d8e0;
+            font-size: 1.2em;
+            margin-bottom: 40px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .game-card {
+            background-color: #2f3640;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(15, 185, 177, 0.4);
+            border: 1px solid #0fb9b1;
+        }
+        .game-title {
+            font-size: 1.4em;
+            color: #feca57;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .game-desc {
+            color: #a4b0be;
+            font-size: 0.95em;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+        .play-btn {
+            background-color: #0fb9b1;
+            color: white;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            display: inline-block;
+            transition: 0.2s;
+        }
+        .play-btn:hover {
+            background-color: #2bcbba;
+        }
+        .coming-soon {
+            background-color: #747d8c;
+            cursor: not-allowed;
+        }
+        .coming-soon:hover {
+            background-color: #747d8c;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🚀 365 Games Ecosystem</h1>
+    <div class="subtitle">100% English Voice - Learning by Playing</div>
+
+    <div class="grid-container">
+        <!-- Coming Soon Games -->
+        <div class="game-card">
+            <div class="game-title">Game #1: Tower Academy</div>
+            <div class="game-desc">Build towers and learn physics, counting, and strategy.</div>
+            <a href="#" class="play-btn coming-soon">Coming Soon</a>
+        </div>
+        <div class="game-card">
+            <div class="game-title">Game #2: Mystery Tangram</div>
+            <div class="game-desc">Solve spatial puzzles using geometry and shapes.</div>
+            <a href="#" class="play-btn coming-soon">Coming Soon</a>
+        </div>
+        <div class="game-card">
+            <div class="game-title">Game #3: Treasure Maze</div>
+            <div class="game-desc">Navigate mazes using coding logic and directions.</div>
+            <a href="#" class="play-btn coming-soon">Coming Soon</a>
+        </div>
+        <div class="game-card">
+            <div class="game-title">Game #4: Picture Sudoku</div>
+            <div class="game-desc">Logical deduction using images instead of numbers.</div>
+            <a href="#" class="play-btn coming-soon">Coming Soon</a>
+        </div>
+
+        <!-- Available Games -->
+        <div class="game-card">
+            <div class="game-title">Game #5: Spot 10 Differences</div>
+            <div class="game-desc">The Detective Challenge. Learn vocabulary, prepositions, and colors.</div>
+            <a href="game5_spot_differences.html" class="play-btn">▶ Play Now</a>
+        </div>
+        <div class="game-card">
+            <div class="game-title">Game #6: Timed Puzzle</div>
+            <div class="game-desc">Race to Complete. Spatial reasoning, rotation, and planning.</div>
+            <a href="game6_timed_puzzle.html" class="play-btn">▶ Play Now</a>
+        </div>
+        <div class="game-card">
+            <div class="game-title">Game #7: Logic Domino</div>
+            <div class="game-desc">Build the Chain. Connect concepts, math, and categories.</div>
+            <a href="game7_logic_domino.html" class="play-btn">▶ Play Now</a>
+        </div>
+        <div class="game-card">
+            <div class="game-title">Game #8: Pattern Quest</div>
+            <div class="game-desc">What Comes Next? Predict math and logic sequences.</div>
+            <a href="game8_pattern_quest.html" class="play-btn">▶ Play Now</a>
+        </div>
+        <div class="game-card">
+            <div class="game-title">Game #9: Matchstick Mystery</div>
+            <div class="game-desc">Move, Think, Solve. Fix equations and shapes.</div>
+            <a href="game9_matchstick_mystery.html" class="play-btn">▶ Play Now</a>
+        </div>
+        <div class="game-card">
+            <div class="game-title">Game #10: Tactical Tic-Tac-Toe</div>
+            <div class="game-desc">Think Before You Move. Defend, attack, and create forks.</div>
+            <a href="game10_tactical_tictactoe.html" class="play-btn">▶ Play Now</a>
+        </div>
+    </div>
+
+</body>
+</html>
